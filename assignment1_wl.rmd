@@ -1,30 +1,22 @@
 ---
 title: 'Bios 6301: Assignment 1'
-output: html_document
+author: "Wooyeol Lee"
+date: "October 7, 2015"
+output: pdf_document
 ---
-
-*(informally) Due Tuesday, 08 September, 1:00 PM*
-
-50 points total.
-
-This assignment won't be submitted until we've covered Rmarkdown.
-Place your R code in between the appropriate chunks for each question.
-Check your output by using the `Knit HTML` button in RStudio.
 
 ### Create a Data Set
 
 A data set in R is called a data.frame.  This particular data set is
 made of three categorical variables, or factors: `gender`, `smoker`,
-and `exercise`.  In addition `exercise` is an ordered factor.  `age`
+and `exercise`.  In addition `exercise` is an ordered factor. `age`
 and `los` (length of stay) are continuous variables.
 
 ```{r}
 gender <- c('M','M','F','M','F','F','M','F','M')
 age <- c(34, 64, 38, 63, 40, 73, 27, 51, 47)
 smoker <- c('no','yes','no','no','yes','no','no','no','yes')
-exercise <- factor(c('moderate','frequent','some','some','moderate','none','none','moderate','moderate'),
-                    levels=c('none','some','moderate','frequent'), ordered=TRUE
-)
+exercise <- factor(c('moderate','frequent','some','some','moderate','none','none','moderate','moderate'), levels=c('none','some','moderate','frequent'), ordered=TRUE)
 los <- c(4,8,1,10,6,3,9,4,8)
 x <- data.frame(gender, age, smoker, exercise, los)
 x
@@ -32,7 +24,7 @@ x
 
 ### Create a Model
 
-We can create a model using our data set.  In this case Iâd like to
+We can create a model using our data set.  In this case you would like to
 estimate the association between `los` and all remaining variables.
 This means `los` is our dependent variable. The other columns will be
 terms in our model.
@@ -228,8 +220,7 @@ sets. (3 points)
 
 ```{r}
 var(men$los)
-
--var(women$los)
+var(women$los)
 ```
 
 14. Call the `t.test` function, where the first argument is `los` for
