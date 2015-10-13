@@ -1,0 +1,141 @@
+---
+title: 'Bios 6301: Assignment 3'
+author: "Wooyeol Lee"
+date: "October 7, 2015"
+output: pdf_document
+---
+
+### Question 1 ###
+
+**10 points**
+
+1. Use GitHub to turn in the first three homework assignments. Make sure the teacher (couthcommander) and TA (trippcm) are collaborators. (5 points)
+
+1. Commit each assignment individually.  This means your repository should have at least three commits. (5 points)
+
+### Question 2 ###
+
+**15 points**
+
+Write a simulation to calculate the power for the following study
+design.  The study has two variables, treatment group and outcome.
+There are two treatment groups (0, 1) and they should be assigned
+randomly with equal probability.  The outcome should be a random normal
+variable with a mean of 60 and standard deviation of 20.  If a patient
+is in the treatment group, add 5 to the outcome.  5 is the true
+treatment effect.  Create a linear of model for the outcome by the
+treatment group, and extract the p-value (hint: see assigment1).
+Test if the p-value is less than or equal to the alpha level, which
+should be set to 0.05.
+
+Repeat this procedure 1000 times. The power is calculated by finding
+the percentage of times the p-value is less than or equal to the alpha
+level.  Use the `set.seed` command so that the professor can reproduce
+your results.
+
+1. Find the power when the sample size is 100 patients. (10 points)
+```{r}
+#set seed
+set.seed(1000)
+nperson=100
+j<-c(1:nperson)
+nsim <-1000
+pvals<-numeric(nsim)
+for(i in seq_along(pvals)) {
+# make variables n=100
+group <- rbinom(nperson, size=1, prob=0.5)
+outcome <- rnorm(nperson, mean=60, sd=20) 
+#add 5
+outcome<-ifelse(group[j] ==1, outcome[j]+5, outcome[j])
+#extract p-value
+pvals[i]<- summary(lm(outcome ~ group))$coefficients[2,4] 
+}
+mean(pvals < 0.05)
+```
+1. Find the power when the sample size is 1000 patients. (5 points)
+```{r}
+set.seed(1000)
+nperson=1000
+j<-c(1:nperson)
+nsim <-1000
+pvals<-numeric(nsim)
+for(i in seq_along(pvals)) {
+# make variables n=1000
+group <- rbinom(nperson, size=1, prob=0.5)
+outcome <- rnorm(nperson, mean=60, sd=20) 
+#add 5
+outcome<-ifelse(group[j] ==1, outcome[j]+5, outcome[j])
+#extract p-value
+pvals[i]<- summary(lm(outcome ~ group))$coefficients[2,4] 
+}
+mean(pvals < 0.05)
+```
+### Question 3 ###
+
+**15 points**
+
+Obtain a copy of the [football-values lecture](https://github.com/couthcommander/football-values).
+Save the `2015/proj_rb15.csv` file in your working directory.  Read
+in the data set and remove the first two columns.
+
+```{r}
+fb <- read.csv("C:/Users/Wooyeol/Dropbox/me/coursework/fall2015/statistical computing/homework/proj_rb15.csv")
+fb <- fb[,3:10]
+vcov.fb <- var(fb)
+means.fb <- colMeans(fb)
+```
+
+1. Show the correlation matrix of this data set. (3 points)
+```{r}
+cor(fb)
+```
+
+1. Generate a data set with 30 rows that has a similar correlation
+structure.  Repeat the procedure 10,000 times and return the mean
+correlation matrix. (10 points)
+```{r}
+library(MASS)
+keep.1 <-0
+loops <- 10000
+for(i in seq(loops)) {
+  fb.sim <- mvrnorm(30, mu=means.fb, Sigma= vcov.fb)
+  keep.1 <- keep.1 + cor(fb.sim)/loops
+}
+keep.1
+```
+
+1. Generate a data set with 30 rows that has the exact correlation
+structure as the original data set. (2 points)
+```{r}
+fb.sim <- mvrnorm(30, mu = means.fb, Sigma = vcov.fb, empirical=T)
+fb.sim <- as.data.frame(fb.sim)
+cor(fb.sim)
+```
+### Question 4 ###
+
+**10 points**
+
+Use \LaTeX to create the following expressions.
+
+1. Hint: `\Rightarrow` (4 points)
+
+$$P(B) =\sum_{j}{P(B|A_{j})}P(A_{j}),$$
+$$\Rightarrow P(A_{i}|B)=\frac{P(B|A_{i})P(A_{i})}{\sum_{j}{P(B|A_{j})}P(A_{j})}$$
+
+
+1. Hint: `\zeta` (3 points)
+$$\hat{f}(\zeta)=\int_{-\infty}^{\infty}f(x)e^{-2\pi ix\zeta}dx$$
+
+1. Hint: `\partial` (3 points)
+$$\mathbf{J}=\frac{d\mathbf{f}}{d\mathbf{x}}=
+\begin{bmatrix}
+\frac{\partial \mathbf{f}}{\partial x_{1}}& \dots&\frac{\partial \mathbf{f}}{\partial x_{n}}
+\end{bmatrix}=
+\begin{bmatrix}
+\frac{\partial f_{1}}{\partial x_{1}} & \dots & \frac{\partial f_{1}}{\partial x_{n}}   \\
+\vdots & \ddots & \vdots  \\
+\frac{\partial f_{m}}{\partial x_{1}}   & \dots  & \frac{\partial f_{m}}{\partial x_{n}}  
+\end{bmatrix}$$
+
+### Notes/Grade
+50/50 points
