@@ -1,0 +1,227 @@
+---
+title: 'Bios 6301: Assignment 6'
+author: "Wooyeol Lee"
+output: pdf_document
+---
+
+### Question 1 ###
+
+Use the function `next_gen` to generate nine generations (you already have the first), then use the function `hist` to plot the distribution of male heights in each generation (this will require multiple calls to `hist`). The phenomenon you see is called regression to the mean.  Provide (at least) minimal decorations such as title and x-axis labels.
+```{r}
+###### generation 1
+pop1 <- data.frame(m = rnorm(100, 160, 20), f = rnorm(100, 160, 20))
+hist(pop1$m, freq=F,xlim=c(120,200), xlab="height(cm)", ylab="density", main="male heights of generation1")
+####### create a function
+next_gen <- function(pop) {
+  pop$m <- sample(pop$m)
+  pop$m <- rowMeans(pop)
+  pop$f <- pop$m
+  pop
+}
+####### loop from gen2 to gen9
+for(i in 2:9) {
+  vname <- paste("pop",i, sep="")        ###variable name 
+  argname <- paste("pop",i-1, sep="")    ###argument name
+  assign(vname, next_gen(get(argname)))  ###data generation 
+  xlim=c(120,200)
+  xlab="height(cm)"
+  ylab="density"
+  main=paste("male heights of generation",i, sep="")
+  hist(get(vname)$m, freq=F,xlim=xlim, xlab=xlab, ylab=ylab, main=main)  ###histogram
+}
+```
+
+### Question 2 ###
+
+**10 points**
+
+Use the simulated results from question 1 to reproduce (as closely as possible) the following plot in ggplot2.
+
+![generations plot](http://d.pr/i/Xh0d+)
+```{r}
+##question 2
+library(ggplot2)
+data<- rbind(pop1,pop2,pop3,pop4,pop5,pop6,pop7,pop8,pop9)
+gen<-c(rep(1:9, each=100))
+data<- cbind(data, gen)
+#ggplot
+p <- ggplot(data, aes(m, f))
+p + geom_point(alpha = 1/5) +facet_wrap(~gen) 
+```
+
+### Question 3 ###
+
+**10 points**
+
+You calculated the power of a study design in question #2 of assignment 3. The study has two variables, treatment group and outcome. There are two treatment groups (0, 1) and they should be assigned randomly with equal probability. The outcome should be a random normal variable with a mean of 60 and standard deviation of 20. If a patient is in the treatment group, add 5 to the outcome.
+
+Starting with a sample size of 250, create a 95% bootstrap percentile interval for the mean of each group. Then create a new bootstrap interval by increasing the sample size by 250 until the sample is 2500. Thus you will create a total of 10 bootstrap intervals.  Each bootstrap should create 1000 bootstrap samples. (4 points)
+```{r}
+##make a data frame
+dat <- data.frame(numeric(0),numeric(0),numeric(0),numeric(0),numeric(0),numeric(0),numeric(0))
+## r loop: start with 250, incresing by 250
+for(j in 1:10) {
+    # 1. create population 250 to 2500
+  n <- j*250
+  grp <- sample(0:1, n, replace=TRUE)
+  out <- rnorm(n, 60, 20)
+  out[grp == 1] <- out[grp == 1] + 5
+  pop<-data.frame(grp,out)
+  
+  # 2. create bootstrap sample, size1000
+  ssize<-1000
+  boot<-data.frame(numeric(ssize),numeric(ssize))
+  for(i in 1:ssize) {
+    boot[i,1] <- mean(sample(pop$out[grp==1], n, replace=T))
+    boot[i,2] <- mean(sample(pop$out[grp==0], n, replace=T))
+  } 
+  g1<-quantile(boot[,1], probs=c(0.05,0.5,0.95))
+  g0<-quantile(boot[,2], probs=c(0.05,0.5,0.95))
+
+  values <- c(n, g1,g0)
+  dat <- rbind(dat,values)
+}
+colnames(dat)<- c('n','L1','M1','U1','L0','M0','U0')
+dat
+```
+Produce a line chart that includes the bootstrapped mean and lower and upper percentile intervals for each group.  Add appropriate labels and a legend. (6 points)
+
+You may use base graphics or ggplot2.  It should look similar to this (in base).
+
+![bp interval plot](bpi.jpg)
+
+
+```{r}
+##draw a plot
+makeTransparent = function(..., alpha=0.5) {
+  if(alpha<0 | alpha>1) stop("alpha must be between 0 and 1")
+  alpha = floor(255*alpha)  
+  newColor = col2rgb(col=unlist(list(...)), alpha=FALSE)
+  .makeTransparent = function(col, alpha) {
+    rgb(red=col[1], green=col[2], blue=col[3], alpha=alpha, maxColorValue=255)
+  }
+  newColor = apply(newColor, 2, .makeTransparent, alpha=alpha)
+  return(newColor)
+}
+t.red <- makeTransparent('red',alpha=0.5)
+t.blue<- makeTransparent('blue',alpha=0.5)
+par(new=FALSE)
+plot(NULL,
+     xlim=c(250, 2500),
+     ylim=c(50,75),
+     xlab="Sample Size",
+     ylab="DV"
+)
+lines(dat$n, dat$M1)
+lines(dat$n, dat$M0)
+polygon(c(rev(dat$n), dat$n), c(rev(dat$U1),dat$L1),col=t.red, border = NA)
+polygon(c(rev(dat$n), dat$n), c(rev(dat$U0),dat$L0),col=t.blue, border = NA)
+## Add a legend. 
+legend("bottomright", inset=.05, title="Group",
+       c("Treatment","Control"), fill=c(t.red, t.blue), horiz=TRUE)
+
+```
+
+### Question 4 ###
+
+**15 points**
+
+Programming with classes.  The following function will generate random patient information.
+
+```{r}
+makePatient <- function() {
+  vowel <- grep("[aeiou]", letters)
+  cons <- grep("[^aeiou]", letters)
+  name <- paste(sample(LETTERS[cons], 1), sample(letters[vowel], 1), sample(letters[cons], 1), sep='')
+  gender <- factor(sample(0:1, 1), levels=0:1, labels=c('female','male'))
+  dob <- as.Date(sample(7500, 1), origin="1970-01-01")
+  n <- sample(6, 1)
+  doa <- as.Date(sample(1500, n), origin="2010-01-01")
+  pulse <- round(rnorm(n, 80, 10))
+  temp <- round(rnorm(n, 98.4, 0.3), 2)
+  fluid <- round(runif(n), 2)
+  list(name, gender, dob, doa, pulse, temp, fluid)
+}
+```
+
+1. Create an S3 class `medicalRecord` for objects that are a list with the named elements `name`, `gender`, `date_of_birth`, `date_of_admission`, `pulse`, `temperature`, `fluid_intake`. Note that an individual patient may have multiple measurements for some measurements.  Set the RNG seed to `8` and create a medical record by taking the output of `makePatient`.  Print the medical record, and print the class of the medical record. (5 points)
+```{r}
+set.seed(8)
+j<-makePatient()
+class(j) <-"medicalRecord"
+names(j) <- c("name","gender","date_of_birth","date_of_admission","pulse","temp","fluid")
+print(j)      ##Print the medical record
+attributes(j) ##print the class of the medical record
+```
+2. Write a `medicalRecord` method for the generic function `mean`, which returns averages for pulse, temperature and fluids. Also write a `medicalRecord` method for `print`, which employs some nice formatting, perhaps arranging measurements by date, and `plot`, that generates a composite plot of measurements over time.  Call each function for the medical record created in part 1. (5 points)
+```{r}
+##
+mean.medicalRecord <- function(p) {
+  mean.pulse <- mean(p$pulse) 
+  mean.temp <- mean(p$temp)
+  mean.fluid <- mean(p$fluid)
+x<-c(mean.pulse, mean.temp,mean.fluid)
+names(x)<-c("mean.pulse", "mean.temp","mean.fluid")
+return(x)  
+}
+
+##which employs some nice formatting, perhaps arranging measurements by date
+print.medicalRecord <- function(p) {
+  cat("name:",p$name,"\n")
+  cat(sprintf("gender: %s\n",p$gender))
+  cat(sprintf("date of birth: %s\n",p$date_of_birth))
+  t<-as.data.frame(p[4:7])
+  t <- t[order(t[,1]),]   ### sorting data by date
+  return(t)
+}
+
+##generates a composite plot of measurements over time
+plot.medicalRecord <- function(p) {
+  par(mfrow=c(1,3))
+  plot(p$pulse, ylab="pulse", xlab="visit")
+  plot(p$temp, ylab="temparature", xlab="visit")
+  plot(p$fluid,ylab="fluid", xlab="visit")
+}
+mean.medicalRecord(j)
+print.medicalRecord(j)
+plot.medicalRecord(j)
+```
+3. Create a further class for a cohort (group) of patients, and write methods for `mean` and `print` which, when applied to a cohort, apply mean or print to each patient contained in the cohort. Hint: think of this as a "container" for patients.  Reset the RNG seed to 8 and create a cohort of ten patients, then show the output for `mean` and `print`. (5 points)
+```{r}
+###reset seed
+set.seed(8)
+## for loop, create 10 records
+for(i in 1:10) 
+{ 
+  name <- paste("c", i, sep = "")
+  cohort<- makePatient()
+  class(cohort)<-"medicalRecord"
+  names(cohort)<-c("name","gender","date_of_birth","date_of_admission","pulse","temp","fluid")
+  assign(name, cohort)
+}
+## show mean and print
+for(i in 1:10){
+  name <- paste("c", i, sep = "")
+  cohort <- get(name)
+  print(mean(cohort))
+  print(print(cohort))
+}
+```
+
+### Notes/Grade
+```{r}
+# For question 1, if you use par(mfrow=c(3,3)) you can see all the histograms on one plot!
+
+# Question 2, 3 great!!
+
+# Question 4 part 1 gave me an error when running:
+class(j) <-"medicalRecord"
+names(j) <- c("name","gender","date_of_birth","date_of_admission","pulse","temp","fluid")
+print(j)      ##Print the medical record
+
+## If you call names(j) before class(j) it will print(j)
+
+```
+
+
+50/50 points
